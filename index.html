@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Digit Recognizer</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body>
+    <h1>Draw a Digit</h1>
+    <canvas id="canvas" width="280" height="280" style="border:1px solid black; background:black;"></canvas>
+    <br><br>
+    <button onclick="clearCanvas()">Clear</button>
+    <button onclick="predict()">Predict</button>
+    <input type="file" id="imageUpload">
+    <button onclick="uploadImage()">Upload & Predict</button>
+
+    <h2 id="result"></h2>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        // Fix 1: willReadFrequently on main canvas
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 20;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        let drawing = false;
+
+        canvas.addEventListener("mousedown", (e) => {
+            drawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        });
+        canvas.addEventListener("mouseup", () => drawing = false);
+        canvas.addEventListener("mousemove", draw);
+
+        function draw(e) {
+            if (!drawing) return;
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.stroke();
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            document.getElementById("result").innerText = "";
+        }
+
+        function getImageData() {
+            // Step 1: Read raw pixels from the main canvas
+            // Fix 2: willReadFrequently on sample canvas
+            const sample = document.createElement("canvas");
+            sample.width = canvas.width;
+            sample.height = canvas.height;
+            const sctx = sample.getContext("2d", { willReadFrequently: true });
+            sctx.fillStyle = 'black';
+            sctx.fillRect(0, 0, sample.width, sample.height);
+            sctx.drawImage(canvas, 0, 0);
+
+            const src = sctx.getImageData(0, 0, sample.width, sample.height).data;
+
+            // Step 2: Find bounding box of drawn content
+            let minX = sample.width, minY = sample.height, maxX = 0, maxY = 0;
+            for (let y = 0; y < sample.height; y++) {
+                for (let x = 0; x < sample.width; x++) {
+                    const i = (y * sample.width + x) * 4;
+                    const gray = (src[i] + src[i + 1] + src[i + 2]) / 3;
+                    if (gray > 30) {
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                    }
+                }
+            }
+
+            if (minX > maxX || minY > maxY) {
+                // Nothing drawn — return blank
+                return new Array(784).fill(0);
+            }
+
+            // Step 3: Crop to bounding box
+            const cropW = maxX - minX + 1;
+            const cropH = maxY - minY + 1;
+            const crop = document.createElement("canvas");
+            crop.width = cropW;
+            crop.height = cropH;
+            // Fix 3: willReadFrequently on crop canvas
+            const cctx = crop.getContext("2d", { willReadFrequently: true });
+            cctx.putImageData(sctx.getImageData(minX, minY, cropW, cropH), 0, 0);
+
+            // Step 4: Scale to 20x20 and center in 28x28 (MNIST standard)
+            const temp = document.createElement("canvas");
+            temp.width = 28;
+            temp.height = 28;
+            // Fix 4: willReadFrequently on temp canvas
+            const tctx = temp.getContext("2d", { willReadFrequently: true });
+            tctx.fillStyle = 'black';
+            tctx.fillRect(0, 0, 28, 28);
+
+            const scale = Math.min(20 / cropW, 20 / cropH);
+            const drawW = cropW * scale;
+            const drawH = cropH * scale;
+            const dx = (28 - drawW) / 2;
+            const dy = (28 - drawH) / 2;
+            tctx.drawImage(crop, 0, 0, cropW, cropH, dx, dy, drawW, drawH);
+
+            const data = tctx.getImageData(0, 0, 28, 28).data;
+
+            // Fix 5: Send raw grayscale [0-255] — NO binary threshold.
+            // Keeping grayscale intensity gives the model much more signal.
+            const pixels = [];
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                pixels.push(Math.round(gray));
+            }
+
+            return pixels;
+        }
+
+        function predict() {
+            const pixels = getImageData();
+
+            // DEBUG: show 28x28 preview of what gets sent to the model
+            document.getElementById("debugPreview")?.remove();
+            const debugCanvas = document.createElement('canvas');
+            debugCanvas.id = 'debugPreview';
+            debugCanvas.width = 28;
+            debugCanvas.height = 28;
+            debugCanvas.style.cssText = 'border:2px solid red; image-rendering:pixelated; width:140px; height:140px; margin-top:10px;';
+            const dctx = debugCanvas.getContext('2d');
+            const imgData = dctx.createImageData(28, 28);
+            for (let i = 0; i < 784; i++) {
+                imgData.data[i*4]   = pixels[i];
+                imgData.data[i*4+1] = pixels[i];
+                imgData.data[i*4+2] = pixels[i];
+                imgData.data[i*4+3] = 255;
+            }
+            dctx.putImageData(imgData, 0, 0);
+            document.getElementById("result").after(debugCanvas);
+            // END DEBUG
+
+            fetch("/predict", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: pixels })
+            })
+            .then(res => res.json())
+            .then(result => {
+                let output = `Predicted: ${result.prediction} (${(result.confidence * 100).toFixed(2)}%)\n\nTop 3:\n`;
+                result.top3.forEach(item => {
+                    output += `${item.digit} (${(item.confidence * 100).toFixed(2)}%)\n`;
+                });
+                document.getElementById("result").innerText = output;
+            });
+        }
+
+        function uploadImage() {
+            const fileInput = document.getElementById("imageUpload");
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Please select an image first");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            fetch("/predict_image", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.error) {
+                    document.getElementById("result").innerText = "Error: " + result.error;
+                    return;
+                }
+                let output = `Predicted: ${result.prediction} (${(result.confidence * 100).toFixed(2)}%)\n\nTop 3:\n`;
+                result.top3.forEach(item => {
+                    output += `${item.digit} (${(item.confidence * 100).toFixed(2)}%)\n`;
+                });
+                if (result.warning) output += `\n⚠️ ${result.warning}`;
+                document.getElementById("result").innerText = output;
+            });
+        }
+    </script>
+</body>
+</html>
