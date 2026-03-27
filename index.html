@@ -33,14 +33,7 @@
            border-radius: 99px; padding: 3px 12px; font-size: .75rem;
            color: var(--accent); margin-top: 8px; }
 
-  /* ── Tabs ── */
-  .tabs { display: flex; justify-content: center; gap: 4px;
-          margin: 24px 0 0; }
-  .tab { padding: 8px 28px; border-radius: 8px; border: none;
-         cursor: pointer; font-size: .9rem; font-weight: 500; transition: .15s; }
-  .tab.active { background: var(--accent); color: #fff; }
-  .tab:not(.active) { background: var(--surface); color: var(--muted); }
-  .tab:not(.active):hover { color: var(--text); }
+
 
   /* ── Layout ── */
   .page { display: none; max-width: 1080px; margin: 28px auto; padding: 0 16px 40px; }
@@ -112,25 +105,9 @@
   .recent-chip .rc-num { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
   .recent-chip .rc-conf { font-size: .7rem; color: var(--muted); }
 
-  /* ── Equation result ── */
-  .eq-expr { font-size: 1.6rem; font-weight: 700; color: var(--accent);
-             text-align: center; padding: 16px 0 4px; }
-  .eq-result { font-size: 2.8rem; font-weight: 800; color: var(--accent2);
-               text-align: center; }
-  .eq-error { color: var(--danger); font-size: .85rem;
-              text-align: center; padding: 12px 0; }
-  .sym-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-  .sym-chip { background: #1e2235; border: 1px solid var(--border);
-              border-radius: 8px; padding: 8px 14px; text-align: center; }
-  .sym-chip .sc-sym  { font-size: 1.4rem; font-weight: 700; color: var(--accent2); }
-  .sym-chip .sc-type { font-size: .65rem; color: var(--muted); }
 
-  /* ── Equation history ── */
-  .eq-history { margin-top: 12px; }
-  .eq-hist-row { background: #1e2235; border-radius: 8px; padding: 8px 14px;
-                 margin-bottom: 6px; font-size: .9rem; color: var(--text);
-                 display: flex; justify-content: space-between; }
-  .eq-hist-row .ans { color: var(--accent2); font-weight: 700; }
+
+
 
   /* ── Empty state ── */
   .empty { color: var(--muted); font-size: .82rem; padding: 12px 0; }
@@ -149,17 +126,14 @@
     <span class="logo-icon">✦</span>
     Math Recognizer
   </div>
-  <div class="subtitle">CNN &middot; 99.52% accuracy &middot; TensorFlow &middot; Flask &middot; Claude Vision (equations)</div>
-  <div class="badge">MNIST &middot; 60 000 training samples &middot; Claude Vision for operators</div>
+  <div class="subtitle">CNN &middot; 99.52% accuracy &middot; TensorFlow &middot; Flask</div>
+  <div class="badge">MNIST &middot; 60 000 training samples</div>
 </header>
 
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('single')">Single / Multi Digit</button>
-  <button class="tab"        onclick="switchTab('equation')">Equation Solver</button>
-</div>
+
 
 <!-- ════════════════ SINGLE / MULTI DIGIT ════════════════ -->
-<div id="page-single" class="page active">
+<div class="page active">
 
   <!-- Left: canvas -->
   <div class="card">
@@ -213,64 +187,8 @@
   </div>
 </div>
 
-<!-- ════════════════ EQUATION SOLVER ════════════════ -->
-<div id="page-equation" class="page">
-
-  <!-- Left: canvas -->
-  <div class="card">
-    <div class="card-label">Draw an equation</div>
-    <canvas id="eq-canvas" width="400" height="300" style="background:#000;"></canvas>
-    <div class="canvas-hint">write left-to-right &middot; leave gaps between symbols</div>
-    <div class="btn-row">
-      <button class="btn btn-primary"   onclick="solveEquation()">Solve</button>
-      <button class="btn btn-secondary" onclick="clearCanvas('eq-canvas')">Clear</button>
-      <label  class="btn btn-ghost" style="cursor:pointer;">
-        Upload equation image
-        <input type="file" accept="image/*" style="display:none"
-               onchange="uploadEquation(this)">
-      </label>
-    </div>
-    <div class="tips">
-      <strong>Tips for best results:</strong><br>
-      &middot; Write digits clearly, similar size to MNIST digits<br>
-      &middot; Leave a small gap between each symbol<br>
-      &middot; Supported: 0–9, +, −, ×, ÷, =<br>
-      &middot; Multi-digit numbers work: try 12 + 34
-    </div>
-  </div>
-
-  <!-- Right: equation result -->
-  <div>
-    <div class="card">
-      <div class="card-label">Result</div>
-      <div class="eq-expr"   id="eq-expr">—</div>
-      <div class="eq-result" id="eq-result"></div>
-      <div class="eq-error"  id="eq-error" style="display:none;"></div>
-      <div class="card-label" style="margin-top:16px;">Symbol breakdown</div>
-      <div class="sym-chips" id="sym-chips">
-        <div class="empty">no symbols yet</div>
-      </div>
-    </div>
-
-    <div class="card" style="margin-top:16px;">
-      <div class="card-label">Recent equations</div>
-      <div class="eq-history" id="eq-history">
-        <div class="empty">no equations yet</div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ══════════════════════════════════════════════════════ -->
 <script>
-// ─── Tab switching ───────────────────────────────────────
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) =>
-    t.classList.toggle('active', ['single','equation'][i] === name));
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-}
-
 // ─── Canvas drawing ──────────────────────────────────────
 function initCanvas(id) {
   const canvas = document.getElementById(id);
@@ -318,7 +236,6 @@ function clearCanvas(id) {
 }
 
 initCanvas('canvas');
-initCanvas('eq-canvas');
 
 // ─── Single / Multi-digit predict ────────────────────────
 const recentPreds = [];
@@ -378,10 +295,10 @@ function renderMultiResult(data) {
     chipsEl.innerHTML = '';
     // Show full confidence bars for single digit
     confCard.style.display = 'block';
-    const top = d.digit;
+    const top = String(d.digit);
     confEl.innerHTML = Array.from({length:10}, (_,i) => {
-      const pct = ((top3.find(t=>t.digit===i)?.confidence||0)*100).toFixed(1);
-      const isTop = i === top;
+      const pct = ((top3.find(t=>String(t.digit)===String(i))?.confidence||0)*100).toFixed(1);
+      const isTop = String(i) === top;
       return `<div class="conf-row">
         <span class="conf-digit">${i}</span>
         <div class="conf-bar-bg">
@@ -418,83 +335,6 @@ async function uploadSingle(input) {
   }
 }
 
-// ─── Equation solver ─────────────────────────────────────
-const recentEqs = [];
-
-async function solveEquation() {
-  const canvas = document.getElementById('eq-canvas');
-  const blob   = await new Promise(r => canvas.toBlob(r, 'image/png'));
-  const form   = new FormData();
-  form.append('file', blob, 'eq.png');
-
-  try {
-    const res  = await fetch('/predict_equation', {method:'POST', body:form});
-    const data = await res.json();
-    renderEqResult(data);
-  } catch(e) {
-    document.getElementById('eq-error').textContent = e.message;
-    document.getElementById('eq-error').style.display = 'block';
-  }
-}
-
-function renderEqResult(data) {
-  const exprEl  = document.getElementById('eq-expr');
-  const resEl   = document.getElementById('eq-result');
-  const errEl   = document.getElementById('eq-error');
-  const symsEl  = document.getElementById('sym-chips');
-
-  errEl.style.display = 'none';
-  resEl.textContent   = '';
-
-  if (data.error) {
-    exprEl.textContent      = data.expression || '—';
-    errEl.textContent       = '⚠ ' + data.error;
-    errEl.style.display     = 'block';
-  } else {
-    exprEl.textContent = data.expression + ' =';
-    resEl.textContent  = data.result ?? '?';
-  }
-
-  // Symbol chips
-  if (data.tokens && data.tokens.length) {
-    symsEl.innerHTML = data.tokens.map(t =>
-      `<div class="sym-chip">
-         <div class="sc-sym">${t.symbol}</div>
-         <div class="sc-type">${t.type}</div>
-       </div>`
-    ).join('');
-  } else {
-    symsEl.innerHTML = '<div class="empty">no symbols detected</div>';
-  }
-
-  // History
-  if (data.expression && !data.error) {
-    recentEqs.unshift({expr: data.expression, result: data.result});
-    if (recentEqs.length > 5) recentEqs.pop();
-  }
-  const histEl = document.getElementById('eq-history');
-  histEl.innerHTML = recentEqs.length
-    ? recentEqs.map(e =>
-        `<div class="eq-hist-row">
-           <span>${e.expr}</span>
-           <span class="ans">= ${e.result}</span>
-         </div>`).join('')
-    : '<div class="empty">no equations yet</div>';
-}
-
-async function uploadEquation(input) {
-  if (!input.files[0]) return;
-  const form = new FormData();
-  form.append('file', input.files[0]);
-  try {
-    const res  = await fetch('/predict_equation', {method:'POST', body:form});
-    const data = await res.json();
-    renderEqResult(data);
-  } catch(e) {
-    document.getElementById('eq-error').textContent = e.message;
-    document.getElementById('eq-error').style.display = 'block';
-  }
-}
 </script>
 </body>
 </html>
