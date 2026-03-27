@@ -1,366 +1,500 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MNIST Digit Recognizer</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Math Recognizer</title>
+<style>
+  :root {
+    --bg:      #0f1117;
+    --surface: #1a1d27;
+    --border:  #2a2d3e;
+    --accent:  #7c6aff;
+    --accent2: #00e5a0;
+    --text:    #e2e8f0;
+    --muted:   #64748b;
+    --danger:  #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text);
+         font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
 
-        body {
-            background: #0f0f13;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 30px 16px;
-        }
+  /* ── Header ── */
+  header {
+    text-align: center; padding: 32px 16px 16px;
+  }
+  .logo { display: inline-flex; align-items: center; gap: 10px;
+          font-size: 1.6rem; font-weight: 700; }
+  .logo-icon { background: var(--accent); border-radius: 10px;
+               width: 36px; height: 36px; display: grid; place-items: center;
+               font-size: 1.2rem; }
+  .subtitle { color: var(--muted); font-size: .85rem; margin-top: 6px; }
+  .badge { display: inline-block; background: #1e2235; border: 1px solid var(--border);
+           border-radius: 99px; padding: 3px 12px; font-size: .75rem;
+           color: var(--accent); margin-top: 8px; }
 
-        header { text-align: center; margin-bottom: 28px; }
-        header h1 { font-size: 2rem; font-weight: 700; color: #fff; letter-spacing: 1px; }
-        header p { font-size: 0.85rem; color: #888; margin-top: 6px; }
+  /* ── Tabs ── */
+  .tabs { display: flex; justify-content: center; gap: 4px;
+          margin: 24px 0 0; }
+  .tab { padding: 8px 28px; border-radius: 8px; border: none;
+         cursor: pointer; font-size: .9rem; font-weight: 500; transition: .15s; }
+  .tab.active { background: var(--accent); color: #fff; }
+  .tab:not(.active) { background: var(--surface); color: var(--muted); }
+  .tab:not(.active):hover { color: var(--text); }
 
-        .badge {
-            display: inline-block;
-            background: #1e3a5f;
-            color: #60a5fa;
-            font-size: 0.75rem;
-            padding: 3px 10px;
-            border-radius: 20px;
-            margin-top: 8px;
-            border: 1px solid #2563eb44;
-        }
+  /* ── Layout ── */
+  .page { display: none; max-width: 1080px; margin: 28px auto; padding: 0 16px 40px; }
+  .page.active { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media(max-width:720px){ .page.active { grid-template-columns: 1fr; } }
 
-        .main-layout {
-            display: flex;
-            gap: 28px;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            justify-content: center;
-            width: 100%;
-            max-width: 860px;
-        }
+  /* ── Cards ── */
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: 14px; padding: 20px; }
+  .card-label { font-size: .7rem; letter-spacing: .1em; color: var(--muted);
+                text-transform: uppercase; margin-bottom: 12px; }
 
-        .left-panel { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  /* ── Canvas ── */
+  canvas { display: block; border-radius: 10px; cursor: crosshair;
+           width: 100%; touch-action: none; }
+  .canvas-hint { font-size: .75rem; color: var(--muted); margin-top: 8px; }
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .btn { padding: 9px 22px; border-radius: 8px; border: none;
+         cursor: pointer; font-size: .88rem; font-weight: 600; transition: .15s; }
+  .btn-primary { background: var(--accent2); color: #0f1117; }
+  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-secondary { background: var(--surface); color: var(--muted);
+                   border: 1px solid var(--border); }
+  .btn-secondary:hover { color: var(--text); }
+  .btn-ghost { background: transparent; color: var(--muted);
+               border: 1px solid var(--border); }
 
-        .canvas-wrapper {
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 0 0 2px #333, 0 8px 32px rgba(0,0,0,0.5);
-        }
+  /* ── Tips ── */
+  .tips { background: #12162080; border: 1px solid var(--border);
+          border-radius: 10px; padding: 12px 16px; margin-top: 14px;
+          font-size: .78rem; color: #7dd3b0; line-height: 1.8; }
+  .tips strong { color: var(--accent2); }
 
-        #canvas { display: block; cursor: crosshair; touch-action: none; background: #000; }
+  /* ── Result number ── */
+  .result-number { font-size: 4.5rem; font-weight: 800; color: var(--accent);
+                   text-align: center; line-height: 1; padding: 20px 0 8px; }
+  .result-number.multi { font-size: 3.2rem; letter-spacing: .05em; }
+  .result-label { text-align: center; color: var(--muted); font-size: .85rem;
+                  margin-bottom: 4px; }
+  .result-sub { text-align: center; font-size: .8rem; color: var(--muted);
+                margin-bottom: 16px; }
 
-        .canvas-hint { font-size: 0.72rem; color: #555; text-align: center; }
+  /* ── Digit chips (multi) ── */
+  .digit-chips { display: flex; gap: 10px; flex-wrap: wrap;
+                 justify-content: center; margin: 12px 0; }
+  .chip { background: #1e2235; border: 1px solid var(--border);
+          border-radius: 10px; padding: 10px 14px; text-align: center;
+          min-width: 56px; }
+  .chip .ch-digit { font-size: 1.6rem; font-weight: 700; color: var(--accent2); }
+  .chip .ch-conf  { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+  .chip.low .ch-digit { color: var(--danger); }
 
-        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  /* ── Confidence bars ── */
+  .conf-section { margin-top: 16px; }
+  .conf-row { display: flex; align-items: center; gap: 8px;
+              margin-bottom: 6px; font-size: .82rem; }
+  .conf-digit { width: 14px; color: var(--muted); text-align: right; }
+  .conf-bar-bg { flex: 1; background: #1e2235; border-radius: 99px; height: 8px; }
+  .conf-bar { height: 8px; border-radius: 99px;
+              background: var(--border); transition: width .3s; }
+  .conf-bar.top { background: var(--accent2); }
+  .conf-pct { width: 38px; text-align: right; color: var(--muted); }
+  .conf-pct.top { color: var(--accent2); font-weight: 600; }
 
-        button {
-            padding: 9px 22px;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.88rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
+  /* ── Recent ── */
+  .recent-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .recent-chip { background: #1e2235; border: 1px solid var(--border);
+                 border-radius: 8px; padding: 8px 16px; text-align: center; }
+  .recent-chip .rc-num { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
+  .recent-chip .rc-conf { font-size: .7rem; color: var(--muted); }
 
-        .btn-primary { background: #2563eb; color: #fff; }
-        .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
-        .btn-secondary { background: #1e1e2e; color: #aaa; border: 1px solid #333; }
-        .btn-secondary:hover { background: #2a2a3e; color: #fff; }
+  /* ── Equation result ── */
+  .eq-expr { font-size: 1.6rem; font-weight: 700; color: var(--accent);
+             text-align: center; padding: 16px 0 4px; }
+  .eq-result { font-size: 2.8rem; font-weight: 800; color: var(--accent2);
+               text-align: center; }
+  .eq-error { color: var(--danger); font-size: .85rem;
+              text-align: center; padding: 12px 0; }
+  .sym-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .sym-chip { background: #1e2235; border: 1px solid var(--border);
+              border-radius: 8px; padding: 8px 14px; text-align: center; }
+  .sym-chip .sc-sym  { font-size: 1.4rem; font-weight: 700; color: var(--accent2); }
+  .sym-chip .sc-type { font-size: .65rem; color: var(--muted); }
 
-        .upload-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+  /* ── Equation history ── */
+  .eq-history { margin-top: 12px; }
+  .eq-hist-row { background: #1e2235; border-radius: 8px; padding: 8px 14px;
+                 margin-bottom: 6px; font-size: .9rem; color: var(--text);
+                 display: flex; justify-content: space-between; }
+  .eq-hist-row .ans { color: var(--accent2); font-weight: 700; }
 
-        .upload-label {
-            padding: 9px 16px;
-            background: #1e1e2e;
-            border: 1px dashed #444;
-            border-radius: 8px;
-            font-size: 0.82rem;
-            color: #888;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .upload-label:hover { border-color: #2563eb; color: #60a5fa; }
-        #imageUpload { display: none; }
+  /* ── Empty state ── */
+  .empty { color: var(--muted); font-size: .82rem; padding: 12px 0; }
 
-        .right-panel { flex: 1; min-width: 280px; max-width: 380px; display: flex; flex-direction: column; gap: 16px; }
-
-        .result-card {
-            background: #16161f;
-            border: 1px solid #2a2a3e;
-            border-radius: 12px;
-            padding: 20px;
-            min-height: 100px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .result-idle { color: #444; font-size: 0.88rem; }
-        .result-digit { font-size: 4.5rem; font-weight: 800; color: #60a5fa; line-height: 1; }
-        .result-conf { font-size: 0.9rem; color: #888; margin-top: 4px; }
-
-        .spinner {
-            width: 28px; height: 28px;
-            border: 3px solid #333;
-            border-top-color: #2563eb;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .bars-card, .history-card {
-            background: #16161f;
-            border: 1px solid #2a2a3e;
-            border-radius: 12px;
-            padding: 16px 20px;
-        }
-
-        .card-title {
-            font-size: 0.72rem;
-            color: #555;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
-        }
-
-        .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
-        .bar-label { width: 16px; font-size: 0.82rem; color: #aaa; text-align: right; flex-shrink: 0; }
-        .bar-track { flex: 1; height: 10px; background: #1e1e2e; border-radius: 6px; overflow: hidden; }
-        .bar-fill { height: 100%; border-radius: 6px; background: #2563eb; transition: width 0.45s cubic-bezier(.4,0,.2,1); width: 0%; }
-        .bar-fill.top { background: #60a5fa; }
-        .bar-pct { width: 40px; font-size: 0.74rem; color: #555; text-align: right; flex-shrink: 0; }
-
-        .history-list { display: flex; gap: 8px; flex-wrap: wrap; }
-        .history-item {
-            background: #1e1e2e;
-            border: 1px solid #2a2a3e;
-            border-radius: 8px;
-            padding: 6px 14px;
-            text-align: center;
-            font-size: 0.75rem;
-            color: #888;
-        }
-        .history-item span { display: block; font-size: 1.4rem; font-weight: 700; color: #60a5fa; line-height: 1.2; }
-        .history-empty { color: #444; font-size: 0.82rem; }
-
-        footer { margin-top: 36px; font-size: 0.75rem; color: #444; text-align: center; }
-        footer a { color: #2563eb; text-decoration: none; }
-        footer a:hover { color: #60a5fa; }
-    </style>
+  /* ── Warning ── */
+  .warn { background: #2a1f1f; border: 1px solid #5a2020;
+          border-radius: 8px; padding: 8px 14px; font-size: .8rem;
+          color: var(--danger); margin-top: 10px; display: none; }
+  .warn.show { display: block; }
+</style>
 </head>
 <body>
 
 <header>
-    <h1>✏️ Digit Recognizer</h1>
-    <p>Draw a digit (0–9) and let the model predict it</p>
-    <span class="badge">CNN · 99%+ Accuracy · Trained on 60,000 MNIST samples</span>
+  <div class="logo">
+    <span class="logo-icon">✦</span>
+    Math Recognizer
+  </div>
+  <div class="subtitle">CNN &middot; 99.52% accuracy &middot; TensorFlow &middot; Flask &middot; Claude Vision (equations)</div>
+  <div class="badge">MNIST &middot; 60 000 training samples &middot; Claude Vision for operators</div>
 </header>
 
-<div class="main-layout">
-    <div class="left-panel">
-        <div class="canvas-wrapper">
-            <canvas id="canvas" width="280" height="280"></canvas>
-        </div>
-        <p class="canvas-hint">Draw with mouse or finger</p>
-        <div class="btn-row">
-            <button class="btn-primary" onclick="predict()">Predict</button>
-            <button class="btn-secondary" onclick="clearCanvas()">Clear</button>
-        </div>
-        <div class="upload-row">
-            <label class="upload-label" for="imageUpload">📁 Upload Image</label>
-            <input type="file" id="imageUpload" accept="image/*" onchange="uploadImage()">
-        </div>
-    </div>
-
-    <div class="right-panel">
-        <div class="result-card" id="resultCard">
-            <span class="result-idle">Draw a digit and click Predict</span>
-        </div>
-
-        <div class="bars-card">
-            <div class="card-title">Confidence — All Digits</div>
-            <div id="barsContainer"></div>
-        </div>
-
-        <div class="history-card">
-            <div class="card-title">Recent Predictions</div>
-            <div class="history-list" id="historyList">
-                <span class="history-empty">No predictions yet</span>
-            </div>
-        </div>
-    </div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('single')">Single / Multi Digit</button>
+  <button class="tab"        onclick="switchTab('equation')">Equation Solver</button>
 </div>
 
-<footer>
-    Built with TensorFlow &amp; Flask &nbsp;·&nbsp;
-    <a href="https://github.com/mokshijain22/MNIST-handwritten-digit-recognition-" target="_blank">GitHub</a>
-    &nbsp;·&nbsp;
-    <a href="https://mnist-handwritten-digit-recognition.onrender.com" target="_blank">Live Demo</a>
-</footer>
+<!-- ════════════════ SINGLE / MULTI DIGIT ════════════════ -->
+<div id="page-single" class="page active">
 
+  <!-- Left: canvas -->
+  <div class="card">
+    <div class="card-label">Draw a digit or number</div>
+    <canvas id="canvas" width="400" height="300" style="background:#000;"></canvas>
+    <div class="canvas-hint">mouse or touch &middot; line width 18px</div>
+    <div class="btn-row">
+      <button class="btn btn-primary"    onclick="predictMulti()">Predict</button>
+      <button class="btn btn-secondary"  onclick="clearCanvas('canvas')">Clear</button>
+      <label  class="btn btn-ghost" style="cursor:pointer;">
+        Upload image
+        <input type="file" accept="image/*" style="display:none"
+               onchange="uploadSingle(this)">
+      </label>
+    </div>
+    <div class="tips">
+      <strong>Tips for best results:</strong><br>
+      &middot; Write digits clearly, similar size to MNIST digits<br>
+      &middot; Leave a small gap between each digit<br>
+      &middot; Works with single digits <em>and</em> multi-digit numbers (e.g. 21, 123)<br>
+      &middot; Draw on a black background with white strokes
+    </div>
+  </div>
+
+  <!-- Right: result -->
+  <div>
+    <!-- Main result -->
+    <div class="card" id="result-card">
+      <div class="card-label">Prediction</div>
+      <div class="result-number" id="result-number">—</div>
+      <div class="result-sub"    id="result-sub">draw something and click Predict</div>
+      <div class="warn"          id="warn-low">⚠ Low confidence on one or more digits</div>
+
+      <!-- Multi-digit chips -->
+      <div class="digit-chips"   id="digit-chips"></div>
+    </div>
+
+    <!-- Confidence bars (single digit) -->
+    <div class="card" id="conf-card" style="margin-top:16px; display:none;">
+      <div class="card-label">Confidence — all digits</div>
+      <div id="conf-bars"></div>
+    </div>
+
+    <!-- Recent -->
+    <div class="card" style="margin-top:16px;">
+      <div class="card-label">Recent predictions</div>
+      <div class="recent-grid" id="recent-grid">
+        <div class="empty">no predictions yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ EQUATION SOLVER ════════════════ -->
+<div id="page-equation" class="page">
+
+  <!-- Left: canvas -->
+  <div class="card">
+    <div class="card-label">Draw an equation</div>
+    <canvas id="eq-canvas" width="400" height="300" style="background:#000;"></canvas>
+    <div class="canvas-hint">write left-to-right &middot; leave gaps between symbols</div>
+    <div class="btn-row">
+      <button class="btn btn-primary"   onclick="solveEquation()">Solve</button>
+      <button class="btn btn-secondary" onclick="clearCanvas('eq-canvas')">Clear</button>
+      <label  class="btn btn-ghost" style="cursor:pointer;">
+        Upload equation image
+        <input type="file" accept="image/*" style="display:none"
+               onchange="uploadEquation(this)">
+      </label>
+    </div>
+    <div class="tips">
+      <strong>Tips for best results:</strong><br>
+      &middot; Write digits clearly, similar size to MNIST digits<br>
+      &middot; Leave a small gap between each symbol<br>
+      &middot; Supported: 0–9, +, −, ×, ÷, =<br>
+      &middot; Multi-digit numbers work: try 12 + 34
+    </div>
+  </div>
+
+  <!-- Right: equation result -->
+  <div>
+    <div class="card">
+      <div class="card-label">Result</div>
+      <div class="eq-expr"   id="eq-expr">—</div>
+      <div class="eq-result" id="eq-result"></div>
+      <div class="eq-error"  id="eq-error" style="display:none;"></div>
+      <div class="card-label" style="margin-top:16px;">Symbol breakdown</div>
+      <div class="sym-chips" id="sym-chips">
+        <div class="empty">no symbols yet</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-label">Recent equations</div>
+      <div class="eq-history" id="eq-history">
+        <div class="empty">no equations yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
 <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+// ─── Tab switching ───────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) =>
+    t.classList.toggle('active', ['single','equation'][i] === name));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+}
 
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 18;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+// ─── Canvas drawing ──────────────────────────────────────
+function initCanvas(id) {
+  const canvas = document.getElementById(id);
+  const ctx    = canvas.getContext('2d');
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth   = 18;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
 
-    let drawing = false;
+  let drawing = false, lx = 0, ly = 0;
 
-    function getPos(e) {
-        const r = canvas.getBoundingClientRect();
-        const src = e.touches ? e.touches[0] : e;
-        return { x: src.clientX - r.left, y: src.clientY - r.top };
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    const sx = canvas.width  / r.width;
+    const sy = canvas.height / r.height;
+    if (e.touches) {
+      return [(e.touches[0].clientX - r.left)*sx,
+              (e.touches[0].clientY - r.top )*sy];
     }
+    return [(e.clientX - r.left)*sx, (e.clientY - r.top)*sy];
+  }
 
-    // Mouse events
-    canvas.addEventListener("mousedown",  e => { drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
-    canvas.addEventListener("mouseup",    () => drawing = false);
-    canvas.addEventListener("mouseleave", () => drawing = false);
-    canvas.addEventListener("mousemove",  e => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); });
+  function start(e) { e.preventDefault(); drawing=true; [lx,ly]=pos(e); }
+  function move(e)  {
+    e.preventDefault();
+    if (!drawing) return;
+    const [x,y] = pos(e);
+    ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(x,y); ctx.stroke();
+    [lx,ly] = [x,y];
+  }
+  function stop(e)  { e.preventDefault(); drawing=false; }
 
-    // Touch events
-    canvas.addEventListener("touchstart",  e => { e.preventDefault(); drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }, { passive: false });
-    canvas.addEventListener("touchend",    e => { e.preventDefault(); drawing = false; }, { passive: false });
-    canvas.addEventListener("touchcancel", e => { e.preventDefault(); drawing = false; }, { passive: false });
-    canvas.addEventListener("touchmove",   e => { e.preventDefault(); if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }, { passive: false });
+  canvas.addEventListener('mousedown',  start);
+  canvas.addEventListener('mousemove',  move);
+  canvas.addEventListener('mouseup',    stop);
+  canvas.addEventListener('mouseleave', stop);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove',  move,  {passive:false});
+  canvas.addEventListener('touchend',   stop,  {passive:false});
+}
 
-    function clearCanvas() {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        showIdle();
-        renderBars(null);
-    }
+function clearCanvas(id) {
+  const c = document.getElementById(id);
+  c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
 
-    function getImageData() {
-        const sample = document.createElement("canvas");
-        sample.width = canvas.width; sample.height = canvas.height;
-        const sctx = sample.getContext("2d", { willReadFrequently: true });
-        sctx.fillStyle = '#000'; sctx.fillRect(0, 0, sample.width, sample.height);
-        sctx.drawImage(canvas, 0, 0);
-        const src = sctx.getImageData(0, 0, sample.width, sample.height).data;
+initCanvas('canvas');
+initCanvas('eq-canvas');
 
-        let minX = sample.width, minY = sample.height, maxX = 0, maxY = 0;
-        for (let y = 0; y < sample.height; y++) {
-            for (let x = 0; x < sample.width; x++) {
-                const i = (y * sample.width + x) * 4;
-                if ((src[i] + src[i+1] + src[i+2]) / 3 > 30) {
-                    minX = Math.min(minX, x); minY = Math.min(minY, y);
-                    maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
-                }
-            }
-        }
-        if (minX > maxX || minY > maxY) return new Array(784).fill(0);
+// ─── Single / Multi-digit predict ────────────────────────
+const recentPreds = [];
 
-        const cropW = maxX - minX + 1, cropH = maxY - minY + 1;
-        const crop = document.createElement("canvas");
-        crop.width = cropW; crop.height = cropH;
-        const cctx = crop.getContext("2d", { willReadFrequently: true });
-        cctx.putImageData(sctx.getImageData(minX, minY, cropW, cropH), 0, 0);
+async function predictMulti() {
+  const canvas = document.getElementById('canvas');
+  const blob   = await new Promise(r => canvas.toBlob(r, 'image/png'));
+  const form   = new FormData();
+  form.append('file', blob, 'canvas.png');
 
-        const temp = document.createElement("canvas");
-        temp.width = 28; temp.height = 28;
-        const tctx = temp.getContext("2d", { willReadFrequently: true });
-        tctx.fillStyle = '#000'; tctx.fillRect(0, 0, 28, 28);
-        const scale = Math.min(20 / cropW, 20 / cropH);
-        const drawW = cropW * scale, drawH = cropH * scale;
-        tctx.drawImage(crop, 0, 0, cropW, cropH, (28-drawW)/2, (28-drawH)/2, drawW, drawH);
+  try {
+    const res  = await fetch('/predict_multidigit', {method:'POST', body: form});
+    const data = await res.json();
+    renderMultiResult(data);
+  } catch(e) {
+    document.getElementById('result-number').textContent = 'Error';
+    document.getElementById('result-sub').textContent = e.message;
+  }
+}
 
-        const data = tctx.getImageData(0, 0, 28, 28).data;
-        const pixels = [];
-        for (let i = 0; i < data.length; i += 4)
-            pixels.push(Math.round((data[i] + data[i+1] + data[i+2]) / 3));
-        return pixels;
-    }
+function renderMultiResult(data) {
+  const numEl   = document.getElementById('result-number');
+  const subEl   = document.getElementById('result-sub');
+  const warnEl  = document.getElementById('warn-low');
+  const chipsEl = document.getElementById('digit-chips');
+  const confCard= document.getElementById('conf-card');
+  const confEl  = document.getElementById('conf-bars');
 
-    function showIdle() {
-        document.getElementById("resultCard").innerHTML = '<span class="result-idle">Draw a digit and click Predict</span>';
-    }
+  if (data.error) {
+    numEl.textContent  = '?';
+    subEl.textContent  = data.error;
+    numEl.className    = 'result-number';
+    chipsEl.innerHTML  = '';
+    confCard.style.display = 'none';
+    warnEl.classList.remove('show');
+    return;
+  }
 
-    function showSpinner() {
-        document.getElementById("resultCard").innerHTML = '<div class="spinner"></div>';
-    }
+  const isMulti = data.digit_count > 1;
+  numEl.textContent = data.number;
+  numEl.className   = 'result-number' + (isMulti ? ' multi' : '');
 
-    function showResult(prediction, confidence) {
-        document.getElementById("resultCard").innerHTML = `
-            <div class="result-digit">${prediction}</div>
-            <div class="result-conf">${(confidence * 100).toFixed(1)}% confidence</div>`;
-    }
+  if (isMulti) {
+    subEl.textContent = `${data.digit_count} digits · avg ${(data.avg_confidence*100).toFixed(1)}% confidence`;
+    // Digit chips
+    chipsEl.innerHTML = data.digits.map(d =>
+      `<div class="chip${d.low_conf?' low':''}">
+         <div class="ch-digit">${d.digit}</div>
+         <div class="ch-conf">${(d.confidence*100).toFixed(1)}%</div>
+       </div>`
+    ).join('');
+    confCard.style.display = 'none';
+  } else {
+    const d = (data.digits && data.digits.length > 0) ? data.digits[0] : {digit:0, confidence:0, top3: []};
+    const top3 = Array.isArray(d.top3) ? d.top3 : [];
+    subEl.textContent = `${(d.confidence*100).toFixed(1)}% confidence`;
+    chipsEl.innerHTML = '';
+    // Show full confidence bars for single digit
+    confCard.style.display = 'block';
+    const top = d.digit;
+    confEl.innerHTML = Array.from({length:10}, (_,i) => {
+      const pct = ((top3.find(t=>t.digit===i)?.confidence||0)*100).toFixed(1);
+      const isTop = i === top;
+      return `<div class="conf-row">
+        <span class="conf-digit">${i}</span>
+        <div class="conf-bar-bg">
+          <div class="conf-bar${isTop?' top':''}" style="width:${pct}%"></div>
+        </div>
+        <span class="conf-pct${isTop?' top':''}">${pct}%</span>
+      </div>`;
+    }).join('');
+  }
 
-    function renderBars(top3) {
-        const container = document.getElementById("barsContainer");
-        const all = new Array(10).fill(0);
-        let topDigit = -1;
-        if (top3) { top3.forEach(item => all[item.digit] = item.confidence); topDigit = top3[0].digit; }
-        container.innerHTML = all.map((conf, i) => `
-            <div class="bar-row">
-                <span class="bar-label">${i}</span>
-                <div class="bar-track"><div class="bar-fill ${i===topDigit?'top':''}" style="width:${(conf*100).toFixed(1)}%"></div></div>
-                <span class="bar-pct" style="color:${i===topDigit?'#60a5fa':'#555'}">${top3 ? (conf*100).toFixed(1)+'%' : '—'}</span>
-            </div>`).join('');
-    }
+  warnEl.classList.toggle('show', !!data.has_low_conf);
 
-    const history = [];
-    function addHistory(digit, confidence) {
-        history.unshift({ digit, confidence });
-        if (history.length > 6) history.pop();
-        document.getElementById("historyList").innerHTML = history.map(h => `
-            <div class="history-item"><span>${h.digit}</span>${(h.confidence*100).toFixed(0)}%</div>`).join('');
-    }
+  // Recent
+  recentPreds.unshift({number: data.number, conf: data.avg_confidence});
+  if (recentPreds.length > 6) recentPreds.pop();
+  document.getElementById('recent-grid').innerHTML = recentPreds.map(p =>
+    `<div class="recent-chip">
+       <div class="rc-num">${p.number}</div>
+       <div class="rc-conf">${(p.conf*100).toFixed(0)}%</div>
+     </div>`
+  ).join('');
+}
 
-    function predict() {
-        const pixels = getImageData();
-        if (pixels.every(p => p === 0)) return;
-        showSpinner();
-        fetch("/predict", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: pixels })
-        })
-        .then(res => res.json())
-        .then(result => {
-            showResult(result.prediction, result.confidence);
-            renderBars(result.top3);
-            addHistory(result.prediction, result.confidence);
-        })
-        .catch(() => {
-            document.getElementById("resultCard").innerHTML = '<span class="result-idle" style="color:#f87171">Server error</span>';
-        });
-    }
+async function uploadSingle(input) {
+  if (!input.files[0]) return;
+  const form = new FormData();
+  form.append('file', input.files[0]);
+  try {
+    const res  = await fetch('/predict_multidigit', {method:'POST', body: form});
+    const data = await res.json();
+    renderMultiResult(data);
+  } catch(e) {
+    document.getElementById('result-number').textContent = 'Error';
+  }
+}
 
-    function uploadImage() {
-        const file = document.getElementById("imageUpload").files[0];
-        if (!file) return;
-        showSpinner();
-        const formData = new FormData();
-        formData.append("file", file);
-        fetch("/predict_image", { method: "POST", body: formData })
-        .then(res => res.json())
-        .then(result => {
-            if (result.error) {
-                document.getElementById("resultCard").innerHTML = `<span class="result-idle" style="color:#f87171">${result.error}</span>`;
-                return;
-            }
-            showResult(result.prediction, result.confidence);
-            renderBars(result.top3);
-            addHistory(result.prediction, result.confidence);
-        })
-        .catch(() => {
-            document.getElementById("resultCard").innerHTML = '<span class="result-idle" style="color:#f87171">Server error</span>';
-        });
-    }
+// ─── Equation solver ─────────────────────────────────────
+const recentEqs = [];
 
-    renderBars(null);
+async function solveEquation() {
+  const canvas = document.getElementById('eq-canvas');
+  const blob   = await new Promise(r => canvas.toBlob(r, 'image/png'));
+  const form   = new FormData();
+  form.append('file', blob, 'eq.png');
+
+  try {
+    const res  = await fetch('/predict_equation', {method:'POST', body:form});
+    const data = await res.json();
+    renderEqResult(data);
+  } catch(e) {
+    document.getElementById('eq-error').textContent = e.message;
+    document.getElementById('eq-error').style.display = 'block';
+  }
+}
+
+function renderEqResult(data) {
+  const exprEl  = document.getElementById('eq-expr');
+  const resEl   = document.getElementById('eq-result');
+  const errEl   = document.getElementById('eq-error');
+  const symsEl  = document.getElementById('sym-chips');
+
+  errEl.style.display = 'none';
+  resEl.textContent   = '';
+
+  if (data.error) {
+    exprEl.textContent      = data.expression || '—';
+    errEl.textContent       = '⚠ ' + data.error;
+    errEl.style.display     = 'block';
+  } else {
+    exprEl.textContent = data.expression + ' =';
+    resEl.textContent  = data.result ?? '?';
+  }
+
+  // Symbol chips
+  if (data.tokens && data.tokens.length) {
+    symsEl.innerHTML = data.tokens.map(t =>
+      `<div class="sym-chip">
+         <div class="sc-sym">${t.symbol}</div>
+         <div class="sc-type">${t.type}</div>
+       </div>`
+    ).join('');
+  } else {
+    symsEl.innerHTML = '<div class="empty">no symbols detected</div>';
+  }
+
+  // History
+  if (data.expression && !data.error) {
+    recentEqs.unshift({expr: data.expression, result: data.result});
+    if (recentEqs.length > 5) recentEqs.pop();
+  }
+  const histEl = document.getElementById('eq-history');
+  histEl.innerHTML = recentEqs.length
+    ? recentEqs.map(e =>
+        `<div class="eq-hist-row">
+           <span>${e.expr}</span>
+           <span class="ans">= ${e.result}</span>
+         </div>`).join('')
+    : '<div class="empty">no equations yet</div>';
+}
+
+async function uploadEquation(input) {
+  if (!input.files[0]) return;
+  const form = new FormData();
+  form.append('file', input.files[0]);
+  try {
+    const res  = await fetch('/predict_equation', {method:'POST', body:form});
+    const data = await res.json();
+    renderEqResult(data);
+  } catch(e) {
+    document.getElementById('eq-error').textContent = e.message;
+    document.getElementById('eq-error').style.display = 'block';
+  }
+}
 </script>
 </body>
 </html>
