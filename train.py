@@ -1,7 +1,5 @@
-import tensorflow as tf
 from tensorflow import keras
-from tf_keras.preprocessing.image import ImageDataGenerator
-import numpy as np
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 (X_train, y_train), (X_test, y_test) = keras.datasets.mnist.load_data()
 
