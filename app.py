@@ -212,8 +212,15 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    data       = request.get_json()
-    image      = preprocess_pixels(data['image'])
+    data = request.get_json(silent=True) or {}
+    pixels = data.get('image')
+
+    if pixels is None:
+        return jsonify({"error": "Missing 'image' field"}), 400
+    if not isinstance(pixels, list) or len(pixels) != 28 * 28:
+        return jsonify({"error": "The 'image' field must contain exactly 784 pixel values"}), 400
+
+    image      = preprocess_pixels(pixels)
     prediction = model.predict(image, verbose=0)[0]
     top3       = prediction.argsort()[-3:][::-1]
     return jsonify({
